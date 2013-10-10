@@ -23,24 +23,31 @@ lua -l modjail script.lua
 
 When loaded, this module replaces the Lua loader/searcher function in
 the `package.searchers` table (or `package.loaders` for Lua 5.1) with
-a function that creates and sets a proxy table as global environment,
-which forwards `__index` requests to the real global environment,
-replacing all tables with forwarding proxy tables, and certain
-functions (e.g. `require`) with safer versions.
+a function that creates a (lazy) copy of the global environment for
+the module chunk, and wraps certain functions (e.g. `require`) for
+more effective sandboxing.
 
 If you want to `require` a module that modifies the global environment
 (e.g. [compat52.lua][3]) you have to do it *before* you
-`require( "modjail" )`.
-
-In case you have written your own searcher/loader function for Lua
-modules, and you want to provide isolated environments for them too,
-the return value of the `require` call for `modjail` is a function
-that creates proxy environments used for the jails. Use it like this:
+`require( "modjail" )`, or you can use the return value of the
+`require` call (a [functable][4]) to whitelist a module name
+(obviously that only works when used before you load the module for
+the first time):
 
 ```lua
-local make_jail = require( "modjail" )
-local chunk = loadfile( "mod.lua", "bt", make_jail( _ENV ) )
+local jail = require( "modjail" )
+jail[ "compat52" ] = true
+require( "compat52" )  -- uses the normal global environment
 ```
+
+You can also use the return value of the `require` call to implement
+the jail functionality for your own module searchers/loaders. E.g.:
+
+```lua
+local jail = require( "modjail" )
+local chunk = loadfile( "mod.lua", "bt", jail( _ENV ) )
+```
+
 
 ##                            Disclaimer                            ##
 
@@ -52,14 +59,18 @@ environment:
 *   `load`, `loadstring`, `loadfile` (execute code in real global env)
 *   `dofile` (execute code in real global env)
 *   `module` (allows "reopening" modules, Lua 5.1)
-*   `getfenv` (e.g. on the main chunk, Lua 5.1)
+*   `getfenv` (e.g. on the main chunk, or on userdata, Lua 5.1)
+*   `getmetatable` (e.g. on a string value, or with `package.seeall`)
 *   `debug.*` (registry, upvalues, etc.)
 
-"Fixing" the last three would seriously limit their usefulness.
+"Fixing" the last four would seriously limit their usefulness. Maybe
+the first two will be wrapped in a later version if there is demand
+...
 
   [1]: https://github.com/stevedonovan/Penlight/blob/master/lua/pl/strict.lua
   [2]: https://github.com/Yonaba/strictness/
   [3]: https://github.com/hishamhm/lua-compat-5.2/
+  [4]: http://lua-users.org/wiki/FuncTables
 
 
 ##                              Contact                             ##
