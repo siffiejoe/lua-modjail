@@ -21,7 +21,7 @@ or
 lua -l modjail script.lua
 ```
 
-When loaded this module replaces the Lua loader/searcher function in
+When loaded, this module replaces the Lua loader/searcher function in
 the `package.searchers` table (or `package.loaders` for Lua 5.1) with
 a function that creates and sets a proxy table as global environment,
 which forwards `__index` requests to the real global environment,
@@ -29,7 +29,7 @@ replacing all tables with forwarding proxy tables, and certain
 functions (e.g. `require`) with safer versions.
 
 If you want to `require` a module that modifies the global environment
-(e.g. [compat52.lua][3]) you have to do it before you
+(e.g. [compat52.lua][3]) you have to do it *before* you
 `require( "modjail" )`.
 
 In case you have written you own searcher/loader function for Lua
