@@ -71,6 +71,9 @@ local function make_jail( original, cache )
         t[ k ] = v
         return v
       end,
+      __call = function( t, ... )
+        return original( ... )
+      end,
       __metatable = "jailed environment",
     } )
   end
