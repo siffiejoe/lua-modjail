@@ -55,6 +55,16 @@ local wl = require( "mod.wl" )
 print( "loading 'mod.str' ..." )
 local str = require( "mod.str" )
 
+--[[
+print( "loading 'mod.no.such.module' ..." )
+print( xpcall( function() return require( "mod.no.such.module" ) end,
+               debug.traceback ) )
+
+print( "loading 'mod.broken' ..." )
+print( xpcall( function() return require( "mod.broken" ) end,
+               debug.traceback ) )
+--]]
+
 print( "global environment before vs. after!" )
 assert( comp( _G_before ) )
 assert( comp( require_before, "require" ) )

@@ -5,6 +5,7 @@
 local assert = assert
 local V = assert( _VERSION )
 local _G = assert( _G )
+local error = assert( error )
 local type = assert( type )
 local next = assert( next )
 local loadfile = assert( loadfile )
@@ -116,10 +117,6 @@ do
   end
 
   local dofile = dofile or false
-  local loadfile = loadfile or false
-  if dofile then
-    assert( loadfile )
-  end
   wrappers[ dofile ] = function( root, cache )
     return function( fn )
       local chunk, msg = loadfile( fn, "bt", cache[ root ] )
@@ -196,18 +193,23 @@ local whitelist = {}
 -- the replacement searcher
 local function jailed_lua_searcher( modname )
   assert( type( modname ) == "string" )
-  local mod, msg = package_searchpath( modname, package_path )
-  if mod then
-    local jail = _G
-    if not whitelist[ modname ] then
-      jail = make_jail( _G, _G, {} )
-    end
-    mod, msg = loadfile( mod, "bt", jail )
-    if mod and setfenv then
-      setfenv( mod, jail )
-    end
+  local fn, msg = package_searchpath( modname, package_path )
+  if not fn then
+    return msg
   end
-  return mod, msg
+  local jail = _G
+  if not whitelist[ modname ] then
+    jail = make_jail( _G, _G, {} )
+  end
+  local mod, msg = loadfile( fn, "bt", jail )
+  if not mod then
+    error( "error loading module '"..modname.."' from file '"..fn..
+           "':\n\t"..msg, 0 )
+  end
+  if setfenv then
+    setfenv( mod, jail )
+  end
+  return mod, fn
 end
 
 
