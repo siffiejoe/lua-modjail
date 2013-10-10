@@ -32,7 +32,7 @@ If you want to `require` a module that modifies the global environment
 (e.g. [compat52.lua][3]) you have to do it *before* you
 `require( "modjail" )`.
 
-In case you have written you own searcher/loader function for Lua
+In case you have written your own searcher/loader function for Lua
 modules, and you want to provide isolated environments for them too,
 the return value of the `require` call for `modjail` is a function
 that creates proxy environments used for the jails. Use it like this:
