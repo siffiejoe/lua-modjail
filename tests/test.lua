@@ -11,7 +11,7 @@ print( "", "string", string )
 print( "", "string.match", string.match )
 print( "", "package.loaded.math", package.loaded.math )
 
-require( "modjail" )
+local wl = require( "modjail" )
 
 print( "after jail" )
 print( "", "_G", _G )
@@ -21,6 +21,9 @@ print( "", "table.concat", table.concat )
 print( "", "string", string )
 print( "", "string.match", string.match )
 print( "", "package.loaded.math", package.loaded.math )
+
+-- whitelist testmod module?
+-- wl.testmod = true
 
 local mod = require( "testmod" )
 

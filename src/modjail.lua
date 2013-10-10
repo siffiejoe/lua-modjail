@@ -51,7 +51,6 @@ local function make_jail( original, cache )
   if type( original ) ~= "table" and original ~= require then
     return original
   end
-  cache = cache or {}
   if cache[ original ] then
     return cache[ original ]
   end
@@ -80,12 +79,17 @@ local function make_jail( original, cache )
 end
 
 
+local whitelist = {}
+
 -- the replacement searcher
 local function jailed_lua_searcher( modname )
   assert( type( modname ) == "string" )
   local mod, msg = package_searchpath( modname, package_path )
   if mod then
-    local jail = make_jail( _G )
+    local jail = _G
+    if not whitelist[ modname ] then
+      jail = make_jail( _G, {} )
+    end
     mod, msg = loadfile( mod, "bt", jail )
     if mod and setfenv then
       setfenv( mod, jail )
@@ -99,6 +103,10 @@ assert( #package_searchers == 4, "package.searchers has been modified" )
 package_searchers[ 2 ] = jailed_lua_searcher
 
 
--- in case someone wants to implement a similar searcher function
-return make_jail
+-- provide access to whitelist *and* make_jail function
+return setmetatable( whitelist, {
+  __call = function( _, v )
+    return make_jail( v, {} )
+  end
+} )
 
