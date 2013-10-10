@@ -16,6 +16,7 @@ local package_path = assert( package.path )
 local package_searchers = assert( V == "Lua 5.1" and package.loaders
                                                  or package.searchers )
 local package_searchpath = package.searchpath
+
 if not package_searchpath then
   -- provide package.searchpath for Lua 5.1
   local table = require( "table" )
@@ -46,27 +47,29 @@ if not package_searchpath then
 end
 
 
+-- some functions need to be wrapped to not break the jail
+local wrappers = {}
+
 -- create a proxy of the global environment and any sub tables
-local function make_jail( original, cache )
-  if type( original ) ~= "table" and original ~= require then
+local function make_jail( root, original, cache )
+  local t = type( original )
+  if t ~= "table" and (t ~= "function" or not wrappers[ original ]) then
     return original
   end
   if cache[ original ] then
     return cache[ original ]
   end
-  if original == require then
-    local function my_require( modname )
-      local v = require( modname )
-      return make_jail( v, cache )
-    end
-    cache[ require ] = my_require
-    return my_require
+  local f_handler = wrappers[ original ]
+  if f_handler then
+    local w = f_handler( root, cache )
+    cache[ original ] = w
+    return w
   else -- original is table:
     local new_env = {}
     cache[ original ] = new_env
     return setmetatable( new_env, {
       __index = function( t, k )
-        local v = make_jail( original[ k ], cache )
+        local v = make_jail( root, original[ k ], cache )
         t[ k ] = v
         return v
       end,
@@ -79,6 +82,115 @@ local function make_jail( original, cache )
 end
 
 
+do
+  wrappers[ require ] = function( root, cache )
+    return function( modname )
+      local v = require( modname )
+      return make_jail( root, v, cache )
+    end
+  end
+
+  local package_seeall = package.seeall or false
+  local getmetatable = getmetatable
+  if package_seeall then
+    assert( getmetatable )
+  end
+  wrappers[ package_seeall ] = function( root, cache )
+    return function( m )
+      local mt = getmetatable( m )
+      if mt == nil then
+        mt = {}
+        setmetatable( m, mt )
+      end
+      if type( mt ) == "table" then
+        mt.__index = cache[ root ]
+      end
+      return m
+    end
+  end
+
+  local module = module or false
+  wrappers[ module ] = function( root, cache )
+    -- TODO
+    return module
+  end
+
+  local dofile = dofile or false
+  local loadfile = loadfile or false
+  if dofile then
+    assert( loadfile )
+  end
+  wrappers[ dofile ] = function( root, cache )
+    return function( fn )
+      local chunk, msg = loadfile( fn, "bt", cache[ root ] )
+      if not chunk then
+        error( msg, 2 )
+      else
+        if setfenv then
+          setfenv( chunk, cache[ root ] )
+        end
+        return chunk()
+      end
+    end
+  end
+
+  local load = load or false
+  wrappers[ load ] = function( root, cache )
+    return function( fns, n, m, env )
+      if env == nil then
+        local chunk, msg = load( fns, n, m, cache[ root ] )
+        if chunk then
+          if setfenv then
+            setfenv( chunk, cache[ root ] )
+          end
+          return chunk
+        end
+        return nil, msg
+      else
+        return load( fns, n, m, env )
+      end
+    end
+  end
+
+  wrappers[ loadfile ] = function( root, cache )
+    return function( fn, m, env )
+      if env == nil then
+        local chunk, msg = loadfile( fn, m, cache[ root ] )
+        if chunk then
+          if setfenv then
+            setfenv( chunk, cache[ root ] )
+          end
+          return chunk
+        else
+          return nil, msg
+        end
+      else
+        return loadfile( fn, m, env )
+      end
+    end
+  end
+
+  local loadstring = loadstring or false
+  wrappers[ loadstring ] = function( root, cache )
+    return function( fns, n, m, env )
+      if env == nil then
+        local chunk, msg = loadstring( fns, n, m, cache[ root ] )
+        if chunk then
+          if setfenv then
+            setfenv( chunk, cache[ root ] )
+          end
+          return chunk
+        end
+        return nil, msg
+      else
+        return loadstring( fns, n, m, env )
+      end
+    end
+  end
+end
+
+
+-- use normal _G for modules in this set
 local whitelist = {}
 
 -- the replacement searcher
@@ -88,7 +200,7 @@ local function jailed_lua_searcher( modname )
   if mod then
     local jail = _G
     if not whitelist[ modname ] then
-      jail = make_jail( _G, {} )
+      jail = make_jail( _G, _G, {} )
     end
     mod, msg = loadfile( mod, "bt", jail )
     if mod and setfenv then
@@ -106,7 +218,7 @@ package_searchers[ 2 ] = jailed_lua_searcher
 -- provide access to whitelist *and* make_jail function
 return setmetatable( whitelist, {
   __call = function( _, v )
-    return make_jail( v, {} )
+    return make_jail( v, v, {} )
   end
 } )
 
