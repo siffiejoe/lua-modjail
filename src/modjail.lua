@@ -9,6 +9,7 @@ local error = assert( error )
 local type = assert( type )
 local next = assert( next )
 local loadfile = assert( loadfile )
+local getmetatable = assert( getmetatable )
 local setmetatable = assert( setmetatable )
 local setfenv = V == "Lua 5.1" and assert( setfenv )
 local require = assert( require )
@@ -92,10 +93,6 @@ do
   end
 
   local package_seeall = package.seeall or false
-  local getmetatable = getmetatable
-  if package_seeall then
-    assert( getmetatable )
-  end
   wrappers[ package_seeall ] = function( root, cache )
     return function( m )
       local mt = getmetatable( m )
@@ -215,6 +212,14 @@ end
 
 assert( #package_searchers == 4, "package.searchers has been modified" )
 package_searchers[ 2 ] = jailed_lua_searcher
+
+-- seal string metatable
+do
+  local mt = getmetatable( "" )
+  if type( mt ) == "table" then
+    mt.__metatable = "sealed by modjail"
+  end
+end
 
 
 -- provide access to whitelist *and* make_jail function

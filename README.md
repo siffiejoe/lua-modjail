@@ -58,10 +58,9 @@ environment:
 
 *   `module` (allows "reopening" modules, Lua 5.1)
 *   `getfenv` (e.g. on the main chunk, or on userdata, Lua 5.1)
-*   `getmetatable` (e.g. on a string value)
 *   `debug.*` (registry, upvalues, etc.)
 
-"Fixing" them would seriously limit their usefulness.
+"Fixing" them would limit their usefulness.
 
   [1]: https://github.com/stevedonovan/Penlight/blob/master/lua/pl/strict.lua
   [2]: https://github.com/Yonaba/strictness/
