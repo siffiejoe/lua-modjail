@@ -33,6 +33,7 @@ local _G_before = _G
 local require_before = require
 local table_before = table
 local t_concat_before = table.concat
+local t_insert_before = table.insert
 local string_before = string
 local s_match_before = string.match
 local s_find_before = string.find
@@ -70,6 +71,7 @@ assert( comp( _G_before ) )
 assert( comp( require_before, "require" ) )
 assert( comp( table_before, "table" ) )
 assert( comp( t_concat_before, "table", "concat" ) )
+assert( comp( t_insert_before, "table", "insert" ) )
 assert( comp( string_before, "string" ) )
 assert( comp( s_match_before, "string", "match" ) )
 assert( comp( s_find_before, "string", "find" ) )

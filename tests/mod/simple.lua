@@ -11,7 +11,6 @@ assert( not comp( package.loaded.math, "package", "loaded", "math" ) )
 assert( not comp( package.loaded.modjail, "package", "loaded", "modjail" ) )
 
 _G = nil
-table = 123
 string.match = "no match"
 
 local jail = require( "modjail" )
@@ -20,6 +19,18 @@ print( "loading 'mod.nwl' ..." )
 local nwl = require( "mod.nwl" )
 
 require = false
+if loadstring then
+  assert( loadstring( "table.insert = 'no insert anymore!'" ) )()
+end
+dofile( "./delinsert.lua" )
+assert( loadfile( "./delinsert.lua" ) )()
+local code, i = { "table.insert = ", "'no insert anymore!'" }, 0
+local function loader()
+  i = i + 1
+  return code[ i ]
+end
+assert( load( loader ) )()
+
 
 local M = {}
 
@@ -28,6 +39,8 @@ function M.func()
   assert( not comp( _G ) )
   assert( not comp( require, "require" ) )
   assert( not comp( table, "table" ) )
+  assert( comp( table.concat, "table", "concat" ) )
+  assert( not comp( table.insert, "table", "insert" ) )
   assert( not comp( string, "string" ) )
   assert( not comp( string.match, "string", "match" ) )
   assert( not comp( package.loaded.math, "package", "loaded", "math" ) )
