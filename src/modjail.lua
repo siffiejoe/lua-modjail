@@ -162,7 +162,6 @@ do
       end
     elseif type( t ) ~= "table" then -- don't overwrite non-table modules!
       local env = cache[ root ]
-      local is_new
       t = findtable( env, modname )
       if t == nil then
         error( "name conflict for module '"..modname.."'", 2 )
@@ -197,7 +196,7 @@ do
     function set_env( mod )
       setfenv( 3, mod )
     end
-  else
+  elseif V == "Lua 5.2" then
     local debug_getinfo, debug_setupvalue
     if module then
       local debug = require( "debug" )
@@ -208,10 +207,14 @@ do
       local info = debug_getinfo( 3, "f" )
       debug_setupvalue( info.func, 1, mod )
     end
+  else
+    function set_env() end
   end
 
   wrappers[ module ] = function( root, cache )
     return function( modname, ... )
+      assert( type( modname ) == "string",
+              "modul name must be a string" )
       local mod = pushmodule( modname, root, cache )
       if mod._NAME == nil then
         modinit( mod, modname )
@@ -334,6 +337,7 @@ end
 -- provide access to whitelist *and* make_jail function
 return setmetatable( whitelist, {
   __call = function( _, v )
+    assert( type( v ) == "table", "environment must be a table" )
     return make_jail( v, v, {} )
   end
 } )
