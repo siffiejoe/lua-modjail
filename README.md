@@ -56,7 +56,6 @@ sandboxing malicious code. There are at least the following "security
 holes" that allow a jailed module to modify the real global
 environment:
 
-*   `module` (allows "reopening" modules, Lua 5.1)
 *   `getfenv` (e.g. on the main chunk, or on userdata, Lua 5.1)
 *   `setfenv` (using stack levels, Lua 5.1)
 *   `debug.*` (registry, upvalues, etc.)

@@ -7,7 +7,6 @@ local V = assert( _VERSION )
 local _G = assert( _G )
 local error = assert( error )
 local type = assert( type )
-local next = assert( next )
 local loadfile = assert( loadfile )
 local getmetatable = assert( getmetatable )
 local setmetatable = assert( setmetatable )
@@ -108,9 +107,119 @@ do
   end
 
   local module = module or false
+  local package_loaded = package.loaded
+  local select = select
+  local next = next
+  if module then
+    assert( package_loaded )
+    assert( select )
+    assert( next )
+    assert( ("").gmatch )
+    assert( ("").match )
+  end
+
+  local function findtable( base, modname )
+    local t, is_new = base, true
+    for key in modname:gmatch( "[^%.]+" ) do
+      if t[ key ] == nil then
+        t[ key ] = {}
+        is_new = true
+      else
+        is_new = false
+      end
+      t = t[ key ]
+      if type( t ) ~= "table" then
+        return nil
+      end
+    end
+    return t, is_new
+  end
+
+  local function module_copy( mod, root, cache )
+    local t = {}
+    cache[ mod ] = t
+    for k,v in next, mod, nil do
+      k = make_jail( root, k, cache )
+      v = make_jail( root, v, cache )
+      t[ k ] = v
+    end
+    return t
+  end
+
+  local function pushmodule( modname, root, cache )
+    local t = package_loaded[ modname ]
+    if t == nil then -- allow new module to be added to package.loaded
+      local is_new
+      t, is_new = findtable( _G, modname )
+      if t == nil then
+        error( "name conflict for module '"..modname.."'", 2 )
+      end
+      if is_new then
+        package_loaded[ modname ] = t
+      else
+        t = module_copy( t, root, cache )
+        make_jail( root, package_loaded, cache )[ modname ] = t
+      end
+    elseif type( t ) ~= "table" then -- don't overwrite non-table modules!
+      local env = cache[ root ]
+      local is_new
+      t = findtable( env, modname )
+      if t == nil then
+        error( "name conflict for module '"..modname.."'", 2 )
+      end
+      make_jail( root, package_loaded, cache )[ modname ] = t
+    else -- genuine table module
+      -- make a real copy, because the metatable is probably needed
+      -- for package.seeall, etc.
+      t = module_copy( t, root, cache )
+      make_jail( root, package_loaded, cache )[ modname ] = t
+    end
+    return t
+  end
+
+  local function modinit( mod, modname )
+    mod._NAME = modname
+    mod._M = mod
+    mod._PACKAGE = modname:match( "^(.+%.)[^%.]+$" ) or ""
+  end
+
+  local function dooptions( mod, ... )
+    for i = 1, select( '#', ... ) do
+      local func = select( i, ... )
+      if type( func ) == "function" then
+        func( mod )
+      end
+    end
+  end
+
+  local set_env
+  if V == "Lua 5.1" then
+    function set_env( mod )
+      setfenv( 3, mod )
+    end
+  else
+    local debug_getinfo, debug_setupvalue
+    if module then
+      local debug = require( "debug" )
+      debug_getinfo = assert( debug.getinfo )
+      debug_setupvalue = assert( debug.setupvalue )
+    end
+    function set_env( mod )
+      local info = debug_getinfo( 3, "f" )
+      debug_setupvalue( info.func, 1, mod )
+    end
+  end
+
   wrappers[ module ] = function( root, cache )
-    -- TODO
-    return module
+    return function( modname, ... )
+      local mod = pushmodule( modname, root, cache )
+      if mod._NAME == nil then
+        modinit( mod, modname )
+      end
+      set_env( mod )
+      dooptions( mod, ... )
+      return mod
+    end
   end
 
   local dofile = dofile or false
