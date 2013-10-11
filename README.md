@@ -58,6 +58,7 @@ environment:
 
 *   `module` (allows "reopening" modules, Lua 5.1)
 *   `getfenv` (e.g. on the main chunk, or on userdata, Lua 5.1)
+*   `setfenv` (using stack levels, Lua 5.1)
 *   `debug.*` (registry, upvalues, etc.)
 
 "Fixing" them would limit their usefulness.

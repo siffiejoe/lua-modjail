@@ -31,6 +31,16 @@ local function loader()
 end
 assert( load( loader ) )()
 
+--[[
+print( "causing errors for wrapped dofile ..." )
+print( xpcall( function() return dofile( "./no_such_file.lua" ) end,
+       debug.traceback ) )
+print( xpcall( function() return dofile( "./mod/broken.lua" ) end,
+       debug.traceback ) )
+print( xpcall( function() return dofile( "./rterror.lua" ) end,
+       debug.traceback ) )
+--]]
+
 
 local M = {}
 
