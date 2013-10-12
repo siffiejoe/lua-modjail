@@ -47,7 +47,7 @@ print( "calling module exported function" )
 simple.func()
 
 -- whitelist mod.wl module
-jail[ "mod.wl" ] = true
+jail[ "mod.wl" ] = false
 
 print( "loading 'mod.wl' ..." )
 local wl = require( "mod.wl" )

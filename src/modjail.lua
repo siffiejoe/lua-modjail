@@ -91,8 +91,10 @@ do
     return function( modname )
       assert( type( modname ) == "string",
               "module name must be a string" )
-      if isolated_pl[ modname ] ~= nil then
-        return isolated_pl[ modname ]
+      local iplmn = isolated_pl[ modname ]
+      if iplmn ~= nil and
+         (V ~= "Lua 5.1" or type( iplmn ) ~= "userdata") then
+        return iplmn
       end
       local v = require( modname )
       return make_jail( root, v, cache )
@@ -285,7 +287,10 @@ do
 end
 
 
--- use normal _G for modules in this set
+-- cache caches for shared environments
+local cache_cache = setmetatable( {}, { __mode = "v" } )
+
+-- use normal _G or shared envs for modules in this set
 local whitelist = {}
 
 -- the replacement searcher
@@ -296,8 +301,16 @@ local function jailed_lua_searcher( modname )
     return msg
   end
   local jail = _G
-  if not whitelist[ modname ] then
-    jail = make_jail( _G, _G, {} )
+  local env_id = whitelist[ modname ]
+  if env_id ~= false then
+    local cache
+    if env_id then
+      cache = cache_cache[ env_id ] or {}
+      cache_cache[ env_id ] = cache
+    else
+      cache = {}
+    end
+    jail = make_jail( _G, _G, cache )
   end
   local mod, msg = loadfile( fn, "bt", jail )
   if not mod then
@@ -325,9 +338,11 @@ end
 
 -- provide access to whitelist *and* make_jail function
 return setmetatable( whitelist, {
-  __call = function( _, v )
+  __call = function( _, v, c )
     assert( type( v ) == "table", "environment must be a table" )
-    return make_jail( v, v, {} )
+    c = c or {}
+    assert( type( c ) == "table", "cache must be a table" )
+    return make_jail( v, v, c )
   end
 } )
 

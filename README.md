@@ -30,15 +30,18 @@ more effective sandboxing.
 If you want to `require` a module that modifies the global environment
 (e.g. [compat52.lua][3]) you have to do it *before* you
 `require( "modjail" )`, or you can use the return value of the
-`require` call (a [functable][4]) to whitelist a module name
+`require` call (a [functable][4]) to white-list a module name
 (obviously that only works when used before you load the module for
 the first time):
 
 ```lua
 local jail = require( "modjail" )
-jail[ "compat52" ] = true
+jail[ "compat52" ] = false
 require( "compat52" )  -- uses the normal global environment
 ```
+
+Using values other than `false` for white-listing will make all
+modules having the same value share their isolated environment.
 
 You can also use the return value of the `require` call to implement
 the jail functionality for your own module searchers/loaders. E.g.:

@@ -14,7 +14,7 @@ _G = nil
 string.match = "no match"
 
 local jail = require( "modjail" )
-jail[ "mod.nwl" ] = true -- should *not* work from within isolation!
+jail[ "mod.nwl" ] = false -- should *not* work from within isolation!
 print( "loading 'mod.nwl' ..." )
 local nwl = require( "mod.nwl" )
 
