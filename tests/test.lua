@@ -23,7 +23,7 @@ function comp( v, ... )
   end
   local eq = (v == g)
   print( eq and "[==]" or "[~=]", s,
-         string.rep( "\t", math.max( 0, 3-math.ceil( #s / 8 ) ) ),
+         string.rep( "\t", math.max( 0, 3-math.floor( #s/8 ) ) ),
          v, g )
   return eq
 end
@@ -36,7 +36,6 @@ local t_concat_before = table.concat
 local t_insert_before = table.insert
 local string_before = string
 local s_match_before = string.match
-local s_find_before = string.find
 local pl_math_before = package.loaded.math
 
 local jail = require( "modjail" )
@@ -54,7 +53,13 @@ print( "loading 'mod.wl' ..." )
 local wl = require( "mod.wl" )
 
 print( "loading 'mod.str' ..." )
-local str = require( "mod.str" )
+print( pcall( require, "mod.str" ) )
+
+print( "loading 'mod.mod' ..." )
+local mod = require( "mod.mod" )
+
+print( "loading 'mod.mod.sub' ..." )
+local sub = require( "mod.mod.sub" )
 
 --[[
 print( "loading 'mod.no.such.module' ..." )
@@ -74,7 +79,6 @@ assert( comp( t_concat_before, "table", "concat" ) )
 assert( comp( t_insert_before, "table", "insert" ) )
 assert( comp( string_before, "string" ) )
 assert( comp( s_match_before, "string", "match" ) )
-assert( comp( s_find_before, "string", "find" ) )
 assert( comp( pl_math_before, "package", "loaded", "math" ) )
 assert( comp( jail, "package", "loaded", "modjail" ) )
 

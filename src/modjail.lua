@@ -21,21 +21,22 @@ local package_searchpath = package.searchpath
 if not package_searchpath then
   -- provide package.searchpath for Lua 5.1
   local table = require( "table" )
+  local string = require( "string" )
   local io = require( "io" )
   local package_config = assert( package.config )
   local table_concat = assert( table.concat )
   local io_open = assert( io.open )
-  assert( ("").sub )
-  assert( ("").gsub )
-  assert( ("").gmatch )
+  local s_sub = assert( string.sub )
+  local s_gsub = assert( string.gsub )
+  local s_gmatch = assert( string.gmatch )
 
-  local delim = package_config:sub( 1, 1 ):gsub( "(%%)", "%%%1" )
+  local delim = s_gsub( s_sub( package_config, 1, 1 ), "(%%)", "%%%1" )
 
   function package_searchpath( name, path )
-    local pname = name:gsub( "%.", delim ):gsub( "(%%)", "%%%1" )
+    local pname = s_gsub( s_gsub( name, "%.", delim ), "(%%)", "%%%1" )
     local msg = {}
-    for subpath in path:gmatch( "[^;]+" ) do
-      local fpath = subpath:gsub( "%?", pname )
+    for subpath in s_gmatch( path, "[^;]+" ) do
+      local fpath = s_gsub( subpath, "%?", pname )
       local f = io_open( fpath, "r" )
       if f then
         f:close()
@@ -110,17 +111,19 @@ do
   local package_loaded = package.loaded
   local select = select
   local next = next
+  local s_gmatch, s_match
   if module then
     assert( package_loaded )
     assert( select )
     assert( next )
-    assert( ("").gmatch )
-    assert( ("").match )
+    local string = require( "string" )
+    s_gmatch = assert( string.gmatch )
+    s_match = assert( string.match )
   end
 
   local function findtable( base, modname )
     local t, is_new = base, true
-    for key in modname:gmatch( "[^%.]+" ) do
+    for key in s_gmatch( modname, "[^%.]+" ) do
       if t[ key ] == nil then
         t[ key ] = {}
         is_new = true
@@ -135,43 +138,22 @@ do
     return t, is_new
   end
 
-  local function module_copy( mod, root, cache )
-    local t = {}
-    cache[ mod ] = t
-    for k,v in next, mod, nil do
-      k = make_jail( root, k, cache )
-      v = make_jail( root, v, cache )
-      t[ k ] = v
-    end
-    return t
-  end
-
   local function pushmodule( modname, root, cache )
-    local t = package_loaded[ modname ]
-    if t == nil then -- allow new module to be added to package.loaded
+    local isolated_pl = make_jail( root, package_loaded, cache )
+    local t = isolated_pl[ modname]
+    if type( t ) ~= "table" then
       local is_new
-      t, is_new = findtable( _G, modname )
-      if t == nil then
-        error( "name conflict for module '"..modname.."'", 2 )
+      t, is_new = findtable( cache[ root ], modname )
+      if t == nil or not is_new then
+        error( "name conflict for module '"..modname.."'", 3 )
       end
-      if is_new then
+      if package_loaded[ modname ] == nil then
         package_loaded[ modname ] = t
-      else
-        t = module_copy( t, root, cache )
-        make_jail( root, package_loaded, cache )[ modname ] = t
+        cache[ t ] = t
       end
-    elseif type( t ) ~= "table" then -- don't overwrite non-table modules!
-      local env = cache[ root ]
-      t = findtable( env, modname )
-      if t == nil then
-        error( "name conflict for module '"..modname.."'", 2 )
-      end
-      make_jail( root, package_loaded, cache )[ modname ] = t
-    else -- genuine table module
-      -- make a real copy, because the metatable is probably needed
-      -- for package.seeall, etc.
-      t = module_copy( t, root, cache )
-      make_jail( root, package_loaded, cache )[ modname ] = t
+      isolated_pl[ modname ] = t
+    else
+      error( "redefinition of module '"..modname.."'", 3 )
     end
     return t
   end
@@ -179,7 +161,7 @@ do
   local function modinit( mod, modname )
     mod._NAME = modname
     mod._M = mod
-    mod._PACKAGE = modname:match( "^(.+%.)[^%.]+$" ) or ""
+    mod._PACKAGE = s_match( modname, "^(.+%.)[^%.]+$" ) or ""
   end
 
   local function dooptions( mod, ... )
