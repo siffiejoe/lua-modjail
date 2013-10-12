@@ -14,6 +14,7 @@ local setfenv = V == "Lua 5.1" and assert( setfenv )
 local require = assert( require )
 local package = require( "package" )
 local package_path = assert( package.path )
+local package_loaded = assert( package.loaded )
 local package_searchers = assert( V == "Lua 5.1" and package.loaders
                                                  or package.searchers )
 local package_searchpath = package.searchpath
@@ -86,7 +87,13 @@ end
 
 do
   wrappers[ require ] = function( root, cache )
+    local isolated_pl = make_jail( root, package_loaded, cache )
     return function( modname )
+      assert( type( modname ) == "string",
+              "module name must be a string" )
+      if isolated_pl[ modname ] ~= nil then
+        return isolated_pl[ modname ]
+      end
       local v = require( modname )
       return make_jail( root, v, cache )
     end
@@ -108,12 +115,10 @@ do
   end
 
   local module = module or false
-  local package_loaded = package.loaded
   local select = select
   local next = next
   local s_gmatch, s_match
   if module then
-    assert( package_loaded )
     assert( select )
     assert( next )
     local string = require( "string" )
@@ -147,7 +152,9 @@ do
       if t == nil or not is_new then
         error( "name conflict for module '"..modname.."'", 3 )
       end
-      if package_loaded[ modname ] == nil then
+      local plmn = package_loaded[ modname ]
+      if plmn == nil or
+         (V == "Lua 5.1" and type( plmn ) == "userdata") then
         package_loaded[ modname ] = t
         cache[ t ] = t
       end
