@@ -79,6 +79,9 @@ print( xpcall( function() return require( "mod.broken" ) end,
                debug.traceback ) )
 --]]
 
+print( "loading 'mod.errmsg' ..." )
+local errmsg = require( "mod.errmsg" )
+
 print( "global environment before vs. after!" )
 assert( comp( _G_before ) )
 assert( comp( require_before, "require" ) )

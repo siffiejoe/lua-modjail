@@ -89,8 +89,11 @@ do
   wrappers[ require ] = function( root, cache )
     local isolated_pl = make_jail( root, package_loaded, cache )
     return function( modname )
-      assert( type( modname ) == "string",
-              "module name must be a string" )
+      local tmn = type( modname )
+      if tmn ~= "string" then
+        error( "bad argument #1 to 'require' (string expected, got "..
+               tmn..")", 2 )
+      end
       local iplmn = isolated_pl[ modname ]
       if iplmn ~= nil and
          (V ~= "Lua 5.1" or type( iplmn ) ~= "userdata") then
@@ -104,6 +107,11 @@ do
   local package_seeall = package.seeall or false
   wrappers[ package_seeall ] = function( root, cache )
     return function( m )
+      local tm = type( m )
+      if tm ~= "table" then
+        error( "bad argument #1 to 'seeall' (table expected, got "..
+               tm..")", 2 )
+      end
       local mt = getmetatable( m )
       if mt == nil then
         mt = {}
@@ -204,8 +212,11 @@ do
 
   wrappers[ module ] = function( root, cache )
     return function( modname, ... )
-      assert( type( modname ) == "string",
-              "modul name must be a string" )
+      local tmn = type( modname )
+      if tmn ~= "string" then
+        error( "bad argument #1 to 'module' (string expected, got "
+               ..tmn..")", 2 )
+      end
       local mod = pushmodule( modname, root, cache )
       if mod._NAME == nil then
         modinit( mod, modname )
