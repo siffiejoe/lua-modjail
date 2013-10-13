@@ -84,6 +84,7 @@ local function make_jail( root, original, cache )
   end
 end
 
+local require_sentinel
 
 do
   wrappers[ require ] = function( root, cache )
@@ -96,7 +97,7 @@ do
       end
       local iplmn = isolated_pl[ modname ]
       if iplmn ~= nil and
-         (V ~= "Lua 5.1" or type( iplmn ) ~= "userdata") then
+         (V ~= "Lua 5.1" or iplmn ~= require_sentinel) then
         return iplmn
       end
       local v = require( modname )
@@ -164,7 +165,7 @@ do
       end
       local plmn = package_loaded[ modname ]
       if plmn == nil or
-         (V == "Lua 5.1" and type( plmn ) == "userdata") then
+         (V == "Lua 5.1" and plmn == require_sentinel) then
         package_loaded[ modname ] = t
         cache[ t ] = t
       end
@@ -337,6 +338,15 @@ end
 
 assert( #package_searchers == 4, "package.searchers has been modified" )
 package_searchers[ 2 ] = jailed_lua_searcher
+
+-- detect require sentinel
+if V == "Lua 5.1" then
+  local package_preload = assert( package.preload )
+  package_preload[ "modjail.detect" ] = function()
+    require_sentinel = package_loaded[ "modjail.detect" ]
+  end
+  require( "modjail.detect" )
+end
 
 -- seal string metatable
 do
