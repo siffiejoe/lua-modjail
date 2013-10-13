@@ -22,8 +22,8 @@ function comp( v, ... )
     end
   end
   local eq = (v == g)
-  print( eq and "[==]" or "[~=]", s,
-         string.rep( "\t", math.max( 0, 3-math.floor( #s/8 ) ) ),
+  print( eq and "[==]" or "[~=]", s ..
+         string.rep( "\t", math.max( 0, 4-math.floor( #s/8 ) ) ),
          v, g )
   return eq
 end
@@ -60,6 +60,14 @@ local mod = require( "mod.mod" )
 
 print( "loading 'mod.mod.sub' ..." )
 local sub = require( "mod.mod.sub" )
+
+-- shared environment
+jail[ "mod.m1" ] = 1
+jail[ "mod.m2" ] = 1
+print( "loading 'mod.m1' ..." )
+local m1 = require( "mod.m1" )
+print( "loading 'mod.m2' ..." )
+local m2 = require( "mod.m2" )
 
 --[[
 print( "loading 'mod.no.such.module' ..." )
