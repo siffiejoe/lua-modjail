@@ -27,10 +27,10 @@ a function that creates a (lazy) copy of the global environment for
 the module chunk, and wraps certain functions (e.g. `require`) for
 more effective sandboxing.
 
-If you want to `require` a module that modifies the global environment
-(e.g. [compat52.lua][3]) you have to do it *before* you
+If you want to `require` a module that's supposed to modify the global
+environment (e.g. [compat52.lua][3]) you have to do so *before* you
 `require( "modjail" )`, or you can use the return value of the
-`require` call (a [functable][4]) to white-list a module name
+`require` call (a [func table][4]) to white-list a module name
 (obviously that only works when used before you load the module for
 the first time):
 
@@ -65,6 +65,10 @@ environment:
 
 "Fixing" them would limit their usefulness.
 
+*   Also `require` and `module` modify the real global environment by
+    design (`package.loaded`), but at least other globals changes are
+    restricted to the calling chunk.
+
   [1]: https://github.com/stevedonovan/Penlight/blob/master/lua/pl/strict.lua
   [2]: https://github.com/Yonaba/strictness/
   [3]: https://github.com/hishamhm/lua-compat-5.2/
@@ -80,7 +84,7 @@ Comments and feedback are always welcome.
 
 ##                              License                             ##
 
-modjail is *copyrighted free software* distributed under the MIT
+`modjail` is *copyrighted free software* distributed under the MIT
 license (the same license as Lua 5.1). The full license text follows:
 
     modjail (c) 2013 Philipp Janda
