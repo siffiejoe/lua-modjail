@@ -2,6 +2,8 @@
 
 package.path = "../src/?.lua;" .. package.path
 
+print( "testing modjail for", _VERSION )
+
 function comp( v, ... )
   local s = "_G"
   local g = _G

@@ -50,19 +50,6 @@ if not package_searchpath then
 end
 
 
-local function ipairs_iterator( state, var )
-  var = var + 1
-  local v = state[ var ] -- use non-raw access
-  if v ~= nil then
-    return var, v
-  end
-end
-
-local function wrapped_ipairs( t )
-  return ipairs_iterator, t, 0
-end
-
-
 -- some functions need to be wrapped to not break the jail
 local wrappers = {}
 
@@ -101,6 +88,24 @@ end
 local require_sentinel
 
 do
+  local ipairs = ipairs or false
+
+  local function nonraw_ipairs_iterator( state, var )
+    var = var + 1
+    local v = state[ var ] -- use non-raw access
+    if v ~= nil then
+      return var, v
+    end
+  end
+
+  local function nonraw_ipairs( t )
+    return nonraw_ipairs_iterator, t, 0
+  end
+
+  wrappers[ ipairs ] = function( root, cache )
+    return nonraw_ipairs
+  end
+
   wrappers[ require ] = function( root, cache )
     local isolated_pl = make_jail( root, package_loaded, cache )
     return function( modname )

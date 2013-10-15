@@ -75,7 +75,6 @@ modules:
 
 *   `#`, `pairs`, and `next` on globals and other modules won't work
     as expected from within an isolated environment.
-*   `ipairs` should work, but only for Lua 5.2.
 *   Metamethods on global tables (other than `__index` and `__call`)
     won't have any effect when used from an isolated environment.
 
