@@ -40,6 +40,7 @@ local pl_math_before = package.loaded.math
 
 local jail = require( "modjail" )
 
+array = { 1, 2, 3 }
 print( "loading 'mod.simple' ..." )
 local simple = require( "mod.simple" )
 

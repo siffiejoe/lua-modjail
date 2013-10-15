@@ -50,6 +50,19 @@ if not package_searchpath then
 end
 
 
+local function ipairs_iterator( state, var )
+  var = var + 1
+  local v = state[ var ] -- use non-raw access
+  if v ~= nil then
+    return var, v
+  end
+end
+
+local function wrapped_ipairs( t )
+  return ipairs_iterator, t, 0
+end
+
+
 -- some functions need to be wrapped to not break the jail
 local wrappers = {}
 
@@ -79,6 +92,7 @@ local function make_jail( root, original, cache )
       __call = function( t, ... )
         return original( ... )
       end,
+      __ipairs = wrapped_ipairs,
       __metatable = "jailed environment",
     } )
   end

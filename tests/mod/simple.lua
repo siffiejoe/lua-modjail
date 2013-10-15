@@ -1,5 +1,9 @@
 local string = require( "string" )
 
+for i,v in ipairs( array ) do
+  print( i, v )
+end
+
 print( "isolated vs. global environment inside 'mod.simple'" )
 assert( not comp( _G ) )
 assert( not comp( require, "require" ) )
