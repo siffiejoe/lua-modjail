@@ -78,6 +78,8 @@ modules:
     environment.
 *   The length operator `#`, if used on a wrapped global within an
     isolated environment, only works for Lua 5.2.
+*   `table.*` functions won't work correctly on wrapped globals from
+    another environment.
 
   [1]: https://github.com/stevedonovan/Penlight/blob/master/lua/pl/strict.lua
   [2]: https://github.com/Yonaba/strictness/

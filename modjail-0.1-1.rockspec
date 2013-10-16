@@ -10,7 +10,7 @@ description = {
     When loaded this module replaces the searcher/loader function for
     Lua modules to provide every require'd Lua module with its own
     isolated global environment, so that changes made to the global
-    environment by a module is confined to that particular module
+    environment by a module are confined to that particular module
     alone.
   ]],
   homepage = "https://github.com/siffiejoe/lua-modjail/",
