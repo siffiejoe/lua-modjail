@@ -50,8 +50,42 @@ if not package_searchpath then
 end
 
 
+local intmax = 2^31
+
+-- make a function that emulates the # operator for wrapped tables
+local function make_len( orig )
+  return function( t )
+    local len = #orig
+    local p, q = len, len+1
+    -- double q on every step to find a nil in t
+    while t[ q ] ~= nil do
+      p, q = q, 2*q
+      if q > intmax then
+        -- use linear search on malicious table
+        repeat
+          len = len + 1
+        until t[ len ]
+        return len-1
+      end
+    end
+    -- use binary search between p and q
+    while q > p + 1 do
+      local sum = p + q
+      local mid = sum % 2 == 0 and sum/2 or (sum+1)/2
+      if t[ mid ] == nil then
+        q = mid
+      else
+        p = mid
+      end
+    end
+    return p
+  end
+end
+
+
 -- some functions need to be wrapped to not break the jail
 local wrappers = {}
+
 
 -- create a proxy of the global environment and any sub tables
 local function make_jail( root, original, cache )
@@ -70,6 +104,7 @@ local function make_jail( root, original, cache )
   else -- original is table:
     local new_env = {}
     cache[ original ] = new_env
+    local wrapped_len = make_len( original )
     return setmetatable( new_env, {
       __index = function( t, k )
         local v = make_jail( root, original[ k ], cache )
@@ -79,11 +114,12 @@ local function make_jail( root, original, cache )
       __call = function( t, ... )
         return original( ... )
       end,
-      __ipairs = wrapped_ipairs,
+      __len = wrapped_len,
       __metatable = "jailed environment",
     } )
   end
 end
+
 
 local require_sentinel
 
@@ -99,6 +135,11 @@ do
   end
 
   local function nonraw_ipairs( t )
+    local mt = getmetatable( t )
+    if type( mt ) == "table" and
+       type( mt.__ipairs ) == "function" then
+      return mt.__ipairs( t )
+    end
     return nonraw_ipairs_iterator, t, 0
   end
 

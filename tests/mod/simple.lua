@@ -1,5 +1,7 @@
 local string = require( "string" )
 
+array[ 4 ] = 4
+print( "length of array:", #array )
 for i,v in ipairs( array ) do
   print( i, v )
 end
