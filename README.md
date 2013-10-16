@@ -76,8 +76,8 @@ modules:
 *   Metamethods on global tables (other than `__index`, `__call`, and
     `__len`) won't have any effect when used from an isolated
     environment.
-*   The length operator `#` and the `pairs` function only work in Lua
-    5.2 if used on a wrapped global within an isolated environment.
+*   The length operator `#`, if used on a wrapped global within an
+    isolated environment, only works for Lua 5.2.
 
   [1]: https://github.com/stevedonovan/Penlight/blob/master/lua/pl/strict.lua
   [2]: https://github.com/Yonaba/strictness/

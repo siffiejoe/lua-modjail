@@ -8,13 +8,17 @@ local _G = assert( _G )
 local error = assert( error )
 local next = assert( next )
 local type = assert( type )
+local select = assert( select )
 local loadfile = assert( loadfile )
-local getmetatable = assert( getmetatable )
 local setmetatable = assert( setmetatable )
 local setfenv = V == "Lua 5.1" and assert( setfenv )
 local require = assert( require )
-local debug = debug -- optional (unless you need `module`)
+local string = require( "string" )
+local debug = require( "debug" )
 local package = require( "package" )
+local s_match = assert( string.match )
+local s_gmatch = assert( string.gmatch )
+local getmetatable = assert( debug.getmetatable )
 local package_path = assert( package.path )
 local package_loaded = assert( package.loaded )
 local package_searchers = assert( V == "Lua 5.1" and package.loaders
@@ -24,14 +28,12 @@ local package_searchpath = package.searchpath
 if not package_searchpath then
   -- provide package.searchpath for Lua 5.1
   local table = require( "table" )
-  local string = require( "string" )
   local io = require( "io" )
   local package_config = assert( package.config )
   local table_concat = assert( table.concat )
   local io_open = assert( io.open )
   local s_sub = assert( string.sub )
   local s_gsub = assert( string.gsub )
-  local s_gmatch = assert( string.gmatch )
 
   local delim = s_gsub( s_sub( package_config, 1, 1 ), "(%%)", "%%%1" )
 
@@ -51,11 +53,6 @@ if not package_searchpath then
   end
 end
 
-if type( debug ) == "table" and
-   type( debug.getmetatable ) == "function" then
-  -- more powerful getmetatable
-  getmetatable = debug.getmetatable
-end
 
 local intmax = 2^31
 
@@ -174,8 +171,6 @@ end
 local require_sentinel
 
 do
-  local ipairs = ipairs or false
-
   local function nonraw_ipairs_iterator( state, var )
     var = var + 1
     local v = state[ var ] -- use non-raw access
@@ -193,9 +188,26 @@ do
     return nonraw_ipairs_iterator, t, 0
   end
 
-  wrappers[ ipairs ] = function( root, cache )
+  wrappers[ ipairs or false ] = function( root, cache )
     return nonraw_ipairs
   end
+
+
+  if V == "Lua 5.1" then
+    local function lua52_pairs( t )
+      local mt = getmetatable( t )
+      if type( mt ) == "table" and
+         type( mt.__pairs ) == "function" then
+        return mt.__pairs( t )
+      end
+      return next, t, nil
+    end
+
+    wrappers[ pairs or false ] = function( root, cache )
+      return lua52_pairs
+    end
+  end
+
 
   wrappers[ require ] = function( root, cache )
     local isolated_pl = make_jail( root, package_loaded, cache )
@@ -215,8 +227,7 @@ do
     end
   end
 
-  local package_seeall = package.seeall or false
-  wrappers[ package_seeall ] = function( root, cache )
+  wrappers[ package.seeall or false ] = function( root, cache )
     return function( m )
       local tm = type( m )
       if tm ~= "table" then
@@ -235,15 +246,6 @@ do
     end
   end
 
-  local module = module or false
-  local select = select
-  local s_gmatch, s_match
-  if module then
-    assert( select )
-    local string = require( "string" )
-    s_gmatch = assert( string.gmatch )
-    s_match = assert( string.match )
-  end
 
   local function findtable( base, modname )
     local t, is_new = base, true
@@ -305,12 +307,8 @@ do
       setfenv( 3, mod )
     end
   elseif V == "Lua 5.2" then
-    local debug_getinfo, debug_setupvalue
-    if module then
-      local debug = require( "debug" )
-      debug_getinfo = assert( debug.getinfo )
-      debug_setupvalue = assert( debug.setupvalue )
-    end
+    local debug_getinfo = assert( debug.getinfo )
+    local debug_setupvalue = assert( debug.setupvalue )
     function set_env( mod )
       local info = debug_getinfo( 3, "f" )
       debug_setupvalue( info.func, 1, mod )
@@ -319,7 +317,7 @@ do
     function set_env() end
   end
 
-  wrappers[ module ] = function( root, cache )
+  wrappers[ module or false ] = function( root, cache )
     return function( modname, ... )
       local tmn = type( modname )
       if tmn ~= "string" then
@@ -336,8 +334,8 @@ do
     end
   end
 
-  local dofile = dofile or false
-  wrappers[ dofile ] = function( root, cache )
+
+  wrappers[ dofile or false ] = function( root, cache )
     return function( fn )
       local chunk, msg = loadfile( fn, "bt", cache[ root ] )
       if not chunk then
