@@ -6,12 +6,14 @@ local assert = assert
 local V = assert( _VERSION )
 local _G = assert( _G )
 local error = assert( error )
+local next = assert( next )
 local type = assert( type )
 local loadfile = assert( loadfile )
 local getmetatable = assert( getmetatable )
 local setmetatable = assert( setmetatable )
 local setfenv = V == "Lua 5.1" and assert( setfenv )
 local require = assert( require )
+local debug = debug -- optional (unless you need `module`)
 local package = require( "package" )
 local package_path = assert( package.path )
 local package_loaded = assert( package.loaded )
@@ -49,6 +51,11 @@ if not package_searchpath then
   end
 end
 
+if type( debug ) == "table" and
+   type( debug.getmetatable ) == "function" then
+  -- more powerful getmetatable
+  getmetatable = debug.getmetatable
+end
 
 local intmax = 2^31
 
@@ -79,6 +86,40 @@ local function make_len( orig )
       end
     end
     return p
+  end
+end
+
+
+-- make a function that emulates `next` on wrapped tables
+local function next_wrapped( orig, state, var )
+  local val
+  repeat
+    var, val = next( state, var )
+  until var == nil or orig[ var ] == nil
+  if var ~= nil then
+    return var, val
+  end
+end
+
+local function make_next( orig, oiter, ostate, ovar )
+  local pc = 1
+  return function( state, var )
+    if pc < 3 then
+      if pc == 1 then -- first call
+        var, pc = ovar, 2
+      end
+      local k, v = oiter( ostate, var )
+      if k ~= nil then
+        local new_v = state[ k ]
+        if new_v ~= nil then v = new_v end
+        return k, v
+      else
+        pc = 3
+        return next_wrapped( orig, state, nil )
+      end
+    else -- iterate over excess elements in wrapped table
+      return next_wrapped( orig, state, var )
+    end
   end
 end
 
@@ -115,6 +156,15 @@ local function make_jail( root, original, cache )
         return original( ... )
       end,
       __len = wrapped_len,
+      __pairs = function( t )
+        local mt = getmetatable( original )
+        if type( mt ) == "table" and
+           type( mt.__pairs ) == "function" then
+          return make_next( original, mt.__pairs( original ) ), t, nil
+        else
+          return make_next( original, next, original, nil ), t, nil
+        end
+      end,
       __metatable = "jailed environment",
     } )
   end
@@ -187,11 +237,9 @@ do
 
   local module = module or false
   local select = select
-  local next = next
   local s_gmatch, s_match
   if module then
     assert( select )
-    assert( next )
     local string = require( "string" )
     s_gmatch = assert( string.gmatch )
     s_match = assert( string.match )

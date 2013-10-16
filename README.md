@@ -73,13 +73,11 @@ Due to the lazy copying of the global environment (via `__index`
 metamethods) there are some unwanted side-effects for the isolated
 modules:
 
-*   `pairs`, and `next` on globals and other modules won't work as
-    expected from within an isolated environment.
 *   Metamethods on global tables (other than `__index`, `__call`, and
     `__len`) won't have any effect when used from an isolated
     environment.
-*   The length operator `#` only works in Lua 5.2 if used on a global
-    table from within an isolated environment.
+*   The length operator `#` and the `pairs` function only work in Lua
+    5.2 if used on a wrapped global within an isolated environment.
 
   [1]: https://github.com/stevedonovan/Penlight/blob/master/lua/pl/strict.lua
   [2]: https://github.com/Yonaba/strictness/
