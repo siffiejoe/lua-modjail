@@ -68,7 +68,7 @@ local function make_len( orig )
         -- use linear search on malicious table
         repeat
           len = len + 1
-        until t[ len ]
+        until t[ len ] == nil
         return len-1
       end
     end
