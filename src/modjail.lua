@@ -32,13 +32,12 @@ if not package_searchpath then
   local package_config = assert( package.config )
   local table_concat = assert( table.concat )
   local io_open = assert( io.open )
-  local s_sub = assert( string.sub )
   local s_gsub = assert( string.gsub )
 
-  local delim = s_gsub( s_sub( package_config, 1, 1 ), "(%%)", "%%%1" )
+  local delim = s_gsub( s_match( package_config, "^(.-)\n" ), "%%", "%%%%" )
 
   function package_searchpath( name, path )
-    local pname = s_gsub( s_gsub( name, "%.", delim ), "(%%)", "%%%1" )
+    local pname = s_gsub( s_gsub( name, "%.", delim ), "%%", "%%%%" )
     local msg = {}
     for subpath in s_gmatch( path, "[^;]+" ) do
       local fpath = s_gsub( subpath, "%?", pname )
