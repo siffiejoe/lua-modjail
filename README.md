@@ -48,7 +48,7 @@ the jail functionality for your own module searchers/loaders. E.g.:
 
 ```lua
 local jail = require( "modjail" )
-local chunk = loadfile( "mod.lua", "bt", jail( _ENV ) )
+local chunk = loadfile( "mod.lua", "bt", jail( "mod", _ENV ) )
 ```
 
 

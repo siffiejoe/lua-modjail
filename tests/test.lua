@@ -33,9 +33,9 @@ end
 
 local _G_before = _G
 local require_before = require
-local table_before = table
-local t_concat_before = table.concat
-local t_insert_before = table.insert
+local io_before = io
+local io_open_before = io.open
+local io_write_before = io.write
 local string_before = string
 local s_match_before = string.match
 local pl_math_before = package.loaded.math
@@ -59,6 +59,9 @@ local wl = require( "mod.wl" )
 print( "loading 'mod.str' ..." )
 print( pcall( require, "mod.str" ) )
 
+print( "loading 'mod.table' ..." )
+print( pcall( require, "mod.table" ) )
+
 print( "loading 'mod.mod' ..." )
 local mod = require( "mod.mod" )
 
@@ -66,8 +69,8 @@ print( "loading 'mod.mod.sub' ..." )
 local sub = require( "mod.mod.sub" )
 
 -- shared environment
-jail[ "mod.m1" ] = 1
-jail[ "mod.m2" ] = 1
+jail[ "mod.m1" ] = "mod.m*"
+jail[ "mod.m2" ] = "mod.m*"
 print( "loading 'mod.m1' ..." )
 local m1 = require( "mod.m1" )
 print( "loading 'mod.m2' ..." )
@@ -89,9 +92,9 @@ local errmsg = require( "mod.errmsg" )
 print( "global environment before vs. after!" )
 assert( comp( _G_before ) )
 assert( comp( require_before, "require" ) )
-assert( comp( table_before, "table" ) )
-assert( comp( t_concat_before, "table", "concat" ) )
-assert( comp( t_insert_before, "table", "insert" ) )
+assert( comp( io_before, "io" ) )
+assert( comp( io_open_before, "io", "open" ) )
+assert( comp( io_write_before, "io", "write" ) )
 assert( comp( string_before, "string" ) )
 assert( comp( s_match_before, "string", "match" ) )
 assert( comp( pl_math_before, "package", "loaded", "math" ) )

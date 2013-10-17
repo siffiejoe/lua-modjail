@@ -17,8 +17,8 @@ end
 print( "isolated vs. global environment inside 'mod.simple'" )
 assert( not comp( _G ) )
 assert( not comp( require, "require" ) )
-assert( not comp( table, "table" ) )
-assert( comp( table.concat, "table", "concat" ) )
+assert( not comp( io, "io" ) )
+assert( comp( io.open, "io", "open" ) )
 assert( not comp( string, "string" ) )
 assert( comp( string.match, "string", "match" ) )
 assert( not comp( package.loaded.math, "package", "loaded", "math" ) )
@@ -36,11 +36,11 @@ local nwl = require( "mod.nwl" )
 
 require = false
 if loadstring then
-  assert( loadstring( "table.insert = 'no insert anymore!'" ) )()
+  assert( loadstring( "io.write = 'no io.write anymore!'" ) )()
 end
-dofile( "./delinsert.lua" )
-assert( loadfile( "./delinsert.lua" ) )()
-local code, i = { "table.insert = ", "'no insert anymore!'" }, 0
+dofile( "./delwrite.lua" )
+assert( loadfile( "./delwrite.lua" ) )()
+local code, i = { "io.write = ", "'no io.write anymore!'" }, 0
 local function loader()
   i = i + 1
   return code[ i ]
@@ -53,9 +53,9 @@ function M.func()
   print( "isolated vs. global environment inside 'testmod.func()'" )
   assert( not comp( _G ) )
   assert( not comp( require, "require" ) )
-  assert( not comp( table, "table" ) )
-  assert( comp( table.concat, "table", "concat" ) )
-  assert( not comp( table.insert, "table", "insert" ) )
+  assert( not comp( io, "io" ) )
+  assert( comp( io.open, "io", "open" ) )
+  assert( not comp( io.write, "io", "write" ) )
   assert( not comp( string, "string" ) )
   assert( not comp( string.match, "string", "match" ) )
   assert( not comp( package.loaded.math, "package", "loaded", "math" ) )

@@ -1,2 +1,2 @@
-tablex.insert = "no insert anymore!"
+iox.write = "no io.write anymore!"
 

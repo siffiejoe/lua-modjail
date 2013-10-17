@@ -8,6 +8,7 @@ local _G = assert( _G )
 local error = assert( error )
 local next = assert( next )
 local type = assert( type )
+local tostring = assert( tostring )
 local select = assert( select )
 local loadfile = assert( loadfile )
 local setmetatable = assert( setmetatable )
@@ -125,7 +126,7 @@ local wrappers = {}
 
 
 -- create a proxy of the global environment and any sub tables
-local function make_jail( root, original, cache )
+local function make_jail( id, root, original, cache )
   local t = type( original )
   if t ~= "table" and (t ~= "function" or not wrappers[ original ]) then
     return original
@@ -135,16 +136,17 @@ local function make_jail( root, original, cache )
   end
   local f_handler = wrappers[ original ]
   if f_handler then
-    local w = f_handler( root, cache )
+    local w = f_handler( id, root, cache )
     cache[ original ] = w
     return w
   else -- original is table:
     local new_env = {}
+    local s = "jail("..tostring( id )..") "..tostring( new_env )
     cache[ original ] = new_env
     local wrapped_len = make_len( original )
     return setmetatable( new_env, {
       __index = function( t, k )
-        local v = make_jail( root, original[ k ], cache )
+        local v = make_jail( id, root, original[ k ], cache )
         t[ k ] = v
         return v
       end,
@@ -161,8 +163,20 @@ local function make_jail( root, original, cache )
           return make_next( original, next, original, nil ), t, nil
         end
       end,
+      __tostring = function() return s end,
       __metatable = "jailed environment",
     } )
+  end
+end
+
+
+local function is_wrapper( t )
+  if type( t ) == "table" then
+    local mt = getmetatable( t )
+    return type( mt ) == "table" and
+           mt.__metatable == "jailed environment"
+  else
+    return false
   end
 end
 
@@ -187,7 +201,7 @@ do
     return nonraw_ipairs_iterator, t, 0
   end
 
-  wrappers[ ipairs or false ] = function( root, cache )
+  wrappers[ ipairs or false ] = function( id, root, cache )
     return nonraw_ipairs
   end
 
@@ -202,14 +216,14 @@ do
       return next, t, nil
     end
 
-    wrappers[ pairs or false ] = function( root, cache )
+    wrappers[ pairs or false ] = function( id, root, cache )
       return lua52_pairs
     end
   end
 
 
-  wrappers[ require ] = function( root, cache )
-    local isolated_pl = make_jail( root, package_loaded, cache )
+  wrappers[ require ] = function( id, root, cache )
+    local isolated_pl = make_jail( id, root, package_loaded, cache )
     return function( modname )
       local tmn = type( modname )
       if tmn ~= "string" then
@@ -222,11 +236,11 @@ do
         return iplmn
       end
       local v = require( modname )
-      return make_jail( root, v, cache )
+      return make_jail( id, root, v, cache )
     end
   end
 
-  wrappers[ package.seeall or false ] = function( root, cache )
+  wrappers[ package.seeall or false ] = function( id, root, cache )
     return function( m )
       local tm = type( m )
       if tm ~= "table" then
@@ -263,8 +277,8 @@ do
     return t, is_new
   end
 
-  local function pushmodule( modname, root, cache )
-    local isolated_pl = make_jail( root, package_loaded, cache )
+  local function pushmodule( modname, id, root, cache )
+    local isolated_pl = make_jail( id, root, package_loaded, cache )
     local t = isolated_pl[ modname]
     if type( t ) ~= "table" then
       local is_new
@@ -316,14 +330,14 @@ do
     function set_env() end
   end
 
-  wrappers[ module or false ] = function( root, cache )
+  wrappers[ module or false ] = function( id, root, cache )
     return function( modname, ... )
       local tmn = type( modname )
       if tmn ~= "string" then
         error( "bad argument #1 to 'module' (string expected, got "
                ..tmn..")", 2 )
       end
-      local mod = pushmodule( modname, root, cache )
+      local mod = pushmodule( modname, id, root, cache )
       if mod._NAME == nil then
         modinit( mod, modname )
       end
@@ -334,7 +348,7 @@ do
   end
 
 
-  wrappers[ dofile or false ] = function( root, cache )
+  wrappers[ dofile or false ] = function( id, root, cache )
     return function( fn )
       local chunk, msg = loadfile( fn, "bt", cache[ root ] )
       if not chunk then
@@ -349,7 +363,7 @@ do
   end
 
   local load = load or false
-  wrappers[ load ] = function( root, cache )
+  wrappers[ load ] = function( id, root, cache )
     return function( fns, n, m, env )
       if env == nil then
         local chunk, msg = load( fns, n, m, cache[ root ] )
@@ -366,7 +380,7 @@ do
     end
   end
 
-  wrappers[ loadfile ] = function( root, cache )
+  wrappers[ loadfile ] = function( id, root, cache )
     return function( fn, m, env )
       if env == nil then
         local chunk, msg = loadfile( fn, m, cache[ root ] )
@@ -385,7 +399,7 @@ do
   end
 
   local loadstring = loadstring or false
-  wrappers[ loadstring ] = function( root, cache )
+  wrappers[ loadstring ] = function( id, root, cache )
     return function( fns, n, m, env )
       if env == nil then
         local chunk, msg = loadstring( fns, n, m, cache[ root ] )
@@ -400,6 +414,71 @@ do
         return loadstring( fns, n, m, env )
       end
     end
+  end
+
+  local table = table
+  if table then
+    local table_insert = table.insert or false
+    wrappers[ table_insert ] = function( id, root, cache )
+      return function( t, ... )
+        if is_wrapper( t ) then
+          error( "attempt to perform table.insert on "..tostring( t ), 2 )
+        end
+        return table_insert( t, ... )
+      end
+    end
+
+    local table_remove = table.remove or false
+    wrappers[ table_remove ] = function( id, root, cache )
+      return function( t, ... )
+        if is_wrapper( t ) then
+          error( "attempt to perform table.remove on "..tostring( t ), 2 )
+        end
+        return table_remove( t, ... )
+      end
+    end
+
+    local table_concat = table.concat or false
+    wrappers[ table_concat ] = function( id, root, cache )
+      return function( t, ... )
+        if is_wrapper( t ) then
+          error( "attempt to perform table.concat on "..tostring( t ), 2 )
+        end
+        return table_concat( t, ... )
+      end
+    end
+
+    local table_sort = table.sort or false
+    wrappers[ table_sort ] = function( id, root, cache )
+      return function( t, ... )
+        if is_wrapper( t ) then
+          error( "attempt to perform table.sort on "..tostring( t ), 2 )
+        end
+        return table_sort( t, ... )
+      end
+    end
+
+    local table_unpack = table.unpack or unpack or false
+    wrappers[ table_unpack ] = function( id, root, cache )
+      return function( t, ... )
+        if is_wrapper( t ) then
+          error( "attempt to perform unpack/table.unpack on "..
+                 tostring( t ), 2 )
+        end
+        return table_unpack( t, ... )
+      end
+    end
+
+    local table_maxn = table.maxn or false
+    wrappers[ table_maxn ] = function( id, root, cache )
+      return function( t )
+        if is_wrapper( t ) then
+          error( "attempt to perform table.maxn on  "..tostring( t ), 2 )
+        end
+        return table_maxn( t )
+      end
+    end
+
   end
 end
 
@@ -417,17 +496,18 @@ local function jailed_lua_searcher( modname )
   if not fn then
     return msg
   end
-  local jail = _G
+  local jail, id = _G, modname
   local env_id = whitelist[ modname ]
   if env_id ~= false then
     local cache
     if env_id then
       cache = cache_cache[ env_id ] or {}
       cache_cache[ env_id ] = cache
+      id = env_id
     else
       cache = {}
     end
-    jail = make_jail( _G, _G, cache )
+    jail = make_jail( id, _G, _G, cache )
   end
   local mod, msg = loadfile( fn, "bt", jail )
   if not mod then
@@ -464,11 +544,11 @@ end
 
 -- provide access to whitelist *and* make_jail function
 return setmetatable( whitelist, {
-  __call = function( _, v, c )
+  __call = function( _, id, v, c )
     assert( type( v ) == "table", "environment must be a table" )
     c = c or {}
     assert( type( c ) == "table", "cache must be a table" )
-    return make_jail( v, v, c )
+    return make_jail( id, v, v, c )
   end
 } )
 
