@@ -21,6 +21,7 @@ local s_match = assert( string.match )
 local s_gmatch = assert( string.gmatch )
 local getmetatable = assert( debug.getmetatable )
 local package_path = assert( package.path )
+local package_preload = assert( package.preload )
 local package_loaded = assert( package.loaded )
 local package_searchers = assert( V == "Lua 5.1" and package.loaders
                                                  or package.searchers )
@@ -52,6 +53,10 @@ if not package_searchpath then
     return nil, table_concat( msg )
   end
 end
+
+
+-- debug flag
+local modjail_debug = false
 
 
 local intmax = 2^31
@@ -420,6 +425,7 @@ do
   if table then
     local table_insert = table.insert or false
     wrappers[ table_insert ] = function( id, root, cache )
+      if not modjail_debug then return table_insert end
       return function( t, ... )
         if is_wrapper( t ) then
           error( "attempt to perform table.insert on "..tostring( t ), 2 )
@@ -430,6 +436,7 @@ do
 
     local table_remove = table.remove or false
     wrappers[ table_remove ] = function( id, root, cache )
+      if not modjail_debug then return table_remove end
       return function( t, ... )
         if is_wrapper( t ) then
           error( "attempt to perform table.remove on "..tostring( t ), 2 )
@@ -440,6 +447,7 @@ do
 
     local table_concat = table.concat or false
     wrappers[ table_concat ] = function( id, root, cache )
+      if not modjail_debug then return table_concat end
       return function( t, ... )
         if is_wrapper( t ) then
           error( "attempt to perform table.concat on "..tostring( t ), 2 )
@@ -450,6 +458,7 @@ do
 
     local table_sort = table.sort or false
     wrappers[ table_sort ] = function( id, root, cache )
+      if not modjail_debug then return table_sort end
       return function( t, ... )
         if is_wrapper( t ) then
           error( "attempt to perform table.sort on "..tostring( t ), 2 )
@@ -460,6 +469,7 @@ do
 
     local table_unpack = table.unpack or unpack or false
     wrappers[ table_unpack ] = function( id, root, cache )
+      if not modjail_debug then return table_unpack end
       return function( t, ... )
         if is_wrapper( t ) then
           error( "attempt to perform unpack/table.unpack on "..
@@ -471,6 +481,7 @@ do
 
     local table_maxn = table.maxn or false
     wrappers[ table_maxn ] = function( id, root, cache )
+      if not modjail_debug then return table_maxn end
       return function( t )
         if is_wrapper( t ) then
           error( "attempt to perform table.maxn on  "..tostring( t ), 2 )
@@ -526,11 +537,15 @@ package_searchers[ 2 ] = jailed_lua_searcher
 
 -- detect require sentinel
 if V == "Lua 5.1" then
-  local package_preload = assert( package.preload )
   package_preload[ "modjail.detect" ] = function()
     require_sentinel = package_loaded[ "modjail.detect" ]
   end
   require( "modjail.detect" )
+end
+
+-- make debug submodule available
+package_preload[ "modjail.debug" ] = function()
+  modjail_debug = true
 end
 
 -- seal string metatable

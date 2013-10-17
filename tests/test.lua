@@ -13,14 +13,18 @@ function comp( v, ... )
     if type( g ) == "table" then
       g = g[ k ]
     end
-    if k:match( "^[%a_][%w_]*$" ) then
-      if i == 1 then
-        s = k
+    if type( k ) == "string" then
+      if k:match( "^[%a_][%w_]*$" ) then
+        if i == 1 then
+          s = k
+        else
+          s = s .. "." .. k
+        end
       else
-        s = s .. "." .. k
+        s = s .. "[ '" .. tostring( k ) .. "' ]"
       end
     else
-      s = s .. "[ '" .. k .. "' ]"
+      s = s .. "[ " .. tostring( k ) .. " ]"
     end
   end
   local eq = (v == g)
@@ -41,13 +45,14 @@ local s_match_before = string.match
 local pl_math_before = package.loaded.math
 
 local jail = require( "modjail" )
+require( "modjail.debug" )
 
 testarray = { 1, 2, 3 }
 testtable = { a = 1, b = 2, c = 3 }
 print( "loading 'mod.simple' ..." )
 local simple = require( "mod.simple" )
 
-print( "calling module exported function" )
+print( "calling module exported function ..." )
 simple.func()
 
 -- whitelist mod.wl module

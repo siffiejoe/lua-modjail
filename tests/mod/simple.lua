@@ -1,19 +1,5 @@
 local string = require( "string" )
 
-testarray[ 2 ] = "x"
-testarray[ 4 ] = "y"
-print( "length of testarray:", #testarray )
-print( "ipairs:" )
-for i,v in ipairs( testarray ) do
-  print( i, v )
-end
-testtable.b = "x"
-testtable.d = "y"
-print( "pairs:" )
-for k,v in pairs( testtable ) do
-  print( k, v )
-end
-
 print( "isolated vs. global environment inside 'mod.simple'" )
 assert( not comp( _G ) )
 assert( not comp( require, "require" ) )
@@ -23,8 +9,6 @@ assert( not comp( string, "string" ) )
 assert( comp( string.match, "string", "match" ) )
 assert( not comp( package.loaded.math, "package", "loaded", "math" ) )
 assert( not comp( package.loaded.modjail, "package", "loaded", "modjail" ) )
-assert( not comp( testtable.b, "testtable", "b" ) )
-assert( not comp( testtable.d, "testtable", "d" ) )
 
 _G = nil
 string.match = "no match"
