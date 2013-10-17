@@ -406,7 +406,7 @@ end
 
 
 -- cache caches for shared environments
-local cache_cache = setmetatable( {}, { __mode = "v" } )
+local cache_cache = {}
 
 -- use normal _G or shared envs for modules in this set
 local whitelist = {}
