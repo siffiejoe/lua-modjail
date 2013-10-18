@@ -25,6 +25,16 @@ table.insert( t, 1, 0 )
 for k,v in pairs( t ) do
   print( k, v )
 end
+--table.remove( arg )
+--table.concat( arg )
+--table.sort( arg )
+if _VERSION == "Lua 5.1" then
+  --unpack( arg )
+else
+  --table.unpack( arg )
+end
+--next( arg )
+--setmetatable( arg, {} )
 table.insert( arg, "dummy" )
 
 return {}

@@ -425,7 +425,7 @@ do
     if not modjail_debug then return setmetatable end
     return function( t, ... )
       if is_wrapper( t ) then
-        error( "attempt to call setmetatable on  "..tostring( t ), 2 )
+        error( "attempt to call 'setmetatable' on "..tostring( t ), 2 )
       end
       return setmetatable( t, ... )
     end
@@ -435,7 +435,7 @@ do
     if not modjail_debug then return next end
     return function( t, ... )
       if is_wrapper( t ) then
-        error( "attempt to call next on  "..tostring( t ), 2 )
+        error( "attempt to call 'next' on "..tostring( t ), 2 )
       end
       return next( t, ... )
     end
@@ -448,7 +448,7 @@ do
       if not modjail_debug then return table_insert end
       return function( t, ... )
         if is_wrapper( t ) then
-          error( "attempt to call table.insert on "..tostring( t ), 2 )
+          error( "attempt to call 'table.insert' on "..tostring( t ), 2 )
         end
         return table_insert( t, ... )
       end
@@ -459,7 +459,7 @@ do
       if not modjail_debug then return table_remove end
       return function( t, ... )
         if is_wrapper( t ) then
-          error( "attempt to call table.remove on "..tostring( t ), 2 )
+          error( "attempt to call 'table.remove' on "..tostring( t ), 2 )
         end
         return table_remove( t, ... )
       end
@@ -470,7 +470,7 @@ do
       if not modjail_debug then return table_concat end
       return function( t, ... )
         if is_wrapper( t ) then
-          error( "attempt to call table.concat on "..tostring( t ), 2 )
+          error( "attempt to call 'table.concat' on "..tostring( t ), 2 )
         end
         return table_concat( t, ... )
       end
@@ -481,7 +481,7 @@ do
       if not modjail_debug then return table_sort end
       return function( t, ... )
         if is_wrapper( t ) then
-          error( "attempt to call table.sort on "..tostring( t ), 2 )
+          error( "attempt to call 'table.sort' on "..tostring( t ), 2 )
         end
         return table_sort( t, ... )
       end
@@ -492,7 +492,7 @@ do
       if not modjail_debug then return table_unpack end
       return function( t, ... )
         if is_wrapper( t ) then
-          error( "attempt to call unpack/table.unpack on "..
+          error( "attempt to call 'unpack'/'table.unpack' on "..
                  tostring( t ), 2 )
         end
         return table_unpack( t, ... )
@@ -504,13 +504,13 @@ do
       if not modjail_debug then return table_maxn end
       return function( t )
         if is_wrapper( t ) then
-          error( "attempt to call table.maxn on  "..tostring( t ), 2 )
+          error( "attempt to call 'table.maxn' on  "..tostring( t ), 2 )
         end
         return table_maxn( t )
       end
     end
-
   end
+
 end
 
 
