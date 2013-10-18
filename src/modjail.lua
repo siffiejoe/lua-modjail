@@ -258,6 +258,9 @@ do
         setmetatable( m, mt )
       end
       if type( mt ) == "table" then
+        if mt.__metatable == "jailed environment" then
+          error( "attempt to call 'package.seeall' on  "..tostring( t ), 2 )
+        end
         mt.__index = cache[ root ]
       end
       return m
