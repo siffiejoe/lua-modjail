@@ -12,7 +12,7 @@ assert( not comp( mod.mod, "mod", "mod" ) )
 assert( not comp( _M, "_M" ) )
 assert( not comp( _NAME, "_NAME" ) )
 assert( not comp( _PACKAGE, "_PACKAGE" ) )
-
+function hello() print( "hello from", _NAME ) end
 
 
 module( (...)..".sub", package.seeall )

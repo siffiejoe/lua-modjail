@@ -327,7 +327,7 @@ do
     function set_env( mod )
       setfenv( 3, mod )
     end
-  elseif V == "Lua 5.2" then
+  elseif V == "Lua 5.2" or V == "Lua 5.3" then
     local debug_getinfo = assert( debug.getinfo )
     local debug_setupvalue = assert( debug.setupvalue )
     function set_env( mod )

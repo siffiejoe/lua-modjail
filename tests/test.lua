@@ -69,6 +69,7 @@ print( pcall( require, "mod.table" ) )
 
 print( "loading 'mod.mod' ..." )
 local mod = require( "mod.mod" )
+mod.hello()
 
 print( "loading 'mod.mod.sub' ..." )
 local sub = require( "mod.mod.sub" )
